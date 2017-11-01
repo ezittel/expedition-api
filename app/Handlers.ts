@@ -1,6 +1,9 @@
 import * as express from 'express'
 import {Quest, QuestInstance, QuestAttributes, QuestSearchParams, MAX_SEARCH_LIMIT, PUBLIC_PARTITION} from './models/Quests'
 import {Feedback, FeedbackType, FeedbackAttributes} from './models/Feedback'
+import broker from './remoteplay/Broker'
+import {Session} from 'expedition-qdl/lib/remote/Broker'
+import {SessionID} from 'expedition-qdl/lib/remote/Broker'
 
 const Joi = require('joi');
 
@@ -56,7 +59,7 @@ export function search(quest: Quest, req: express.Request, res: express.Response
         hasMore: (quests.length === (params.limit || MAX_SEARCH_LIMIT))}));
     })
     .catch((e: Error) => {
-      console.log(e);
+      console.error(e);
       return res.status(500).send(GENERIC_ERROR_MESSAGE);
     });
 }
@@ -69,7 +72,7 @@ export function questXMLRedirect(quest: Quest, req: express.Request, res: expres
       res.status(301).end();
     })
     .catch((e: Error) => {
-      console.log(e);
+      console.error(e);
       return res.status(500).send(GENERIC_ERROR_MESSAGE);
     });
 }
@@ -102,7 +105,7 @@ export function publish(quest: Quest, req: express.Request, res: express.Respons
       res.end(quest.dataValues.id);
     })
     .catch((e: Error) => {
-      console.log(e);
+      console.error(e);
       return res.status(500).send(GENERIC_ERROR_MESSAGE);
     })
 }
@@ -117,7 +120,7 @@ export function unpublish(quest: Quest, req: express.Request, res: express.Respo
       res.end('ok');
     })
     .catch((e: Error) => {
-      console.log(e);
+      console.error(e);
       return res.status(500).send(GENERIC_ERROR_MESSAGE);
     });
 }
@@ -155,7 +158,7 @@ export function feedback(feedback: Feedback, req: express.Request, res: express.
     .then((id: string) => {
       res.end('ok');
     }).catch((e: Error) => {
-      console.log(e);
+      console.error(e);
       return res.status(500).send(GENERIC_ERROR_MESSAGE);
     });
 }
@@ -188,9 +191,56 @@ export function subscribe(mailchimp: any, listId: string, req: express.Request, 
             return res.status(status).send((err as any).title);
           }
         }
-        console.log(email + ' subscribed as pending to player list');
+        console.error(email + ' subscribed as pending to player list');
         return res.status(200).send();
       });
     }
   });
+}
+
+export function remotePlayUser(req: express.Request, res: express.Response) {
+  broker.fetchSessionsByClient(req.params.id).then((fetched: Session[]) => {
+    //const history = fetched.map((s) => { return sessions.getMetadata(s.id); }).filter((s) => {return s !== null;});
+    //TODO: reply({history});
+    res.status(200).send(JSON.stringify({history: [
+      {id: 5, peerCount: 3, questTitle: 'Test Quest', firstContact: new Date()},
+      {id: 6, peerCount: 1, questTitle: 'A Quest for Two', firstContact: new Date((new Date()).valueOf() - 65*60)},
+    ]}));
+  })
+  .catch((e: Error) => {
+    return res.status(500).send(JSON.stringify({error: 'Error looking up user details: ' + e.toString()}));
+  });
+}
+
+export function remotePlayNewSession(req: express.Request, res: express.Response) {
+  broker.createSession().then((s: Session) => {
+    console.log('Created session');
+    console.log(s);
+    res.status(200).send(JSON.stringify({secret: s.secret}));
+  })
+  .catch((e: Error) => {
+    return res.status(500).send(JSON.stringify({error: 'Error creating session: ' + e.toString()}));
+  });
+}
+
+export function remotePlayConnect(req: express.Request, res: express.Response) {
+  let body: any;
+  try {
+    body = JSON.parse(req.body);
+  } catch (e) {
+    return res.status(500).end('Error reading request.');
+  }
+  let session: number;
+  const clientID = 'test' + Date.now();
+  broker.joinSession(clientID, body.secret)
+    .then((s: SessionID) => {
+      session = s;
+      return broker.createAuthToken(clientID);
+    })
+    .then((authToken: string) => {
+      return res.status(200).send(JSON.stringify({session, authToken}));
+    })
+    .catch((e: Error) => {
+      return res.status(500).send(JSON.stringify({error: 'Could not join session: ' + e.toString()}));
+    });
 }
