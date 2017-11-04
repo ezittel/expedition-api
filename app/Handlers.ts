@@ -215,8 +215,7 @@ export function remotePlayNewSession(req: express.Request, res: express.Response
   }
 
   broker.createSession().then((s: Session) => {
-    console.log('Created session');
-    console.log(s);
+    console.log('Created session', s);
     res.status(200).send(JSON.stringify({secret: s.secret}));
   })
   .catch((e: Error) => {

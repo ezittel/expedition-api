@@ -60,7 +60,6 @@ export class Broker extends BrokerBase {
 
         return Promise.all(sessions.docs.map((snapshot) => {
           // Get last action on this session
-          // TODO TYPE THIS
           const result: SessionMetadata = {id: snapshot.data().id};
           return db.collection('sessions').doc(result.id.toString()).collection('events')
             .orderBy('added', 'desc').limit(1).get()
@@ -87,7 +86,7 @@ export class Broker extends BrokerBase {
             return s !== null && s.lastAction > ageThreshold;
           });
         });
-      }); // TODO Order by creation
+      });
   }
 
   addClient(c: ClientID, s: Session): Promise<boolean> {
