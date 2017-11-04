@@ -2,8 +2,7 @@ import * as express from 'express'
 import {Quest, QuestInstance, QuestAttributes, QuestSearchParams, MAX_SEARCH_LIMIT, PUBLIC_PARTITION} from './models/Quests'
 import {Feedback, FeedbackType, FeedbackAttributes} from './models/Feedback'
 import broker from './remoteplay/Broker'
-import {Session} from 'expedition-qdl/lib/remote/Broker'
-import {SessionID} from 'expedition-qdl/lib/remote/Broker'
+import {Session, SessionID, SessionMetadata} from 'expedition-qdl/lib/remote/Broker'
 
 const Joi = require('joi');
 
@@ -78,7 +77,7 @@ export function questXMLRedirect(quest: Quest, req: express.Request, res: expres
 }
 
 export function publish(quest: Quest, req: express.Request, res: express.Response) {
-  if (!res.locals.id) {
+  if (!res.locals || !res.locals.id) {
     return res.status(500).end('You are not signed in. Please sign in (by refreshing the page) to save your quest.');
   }
 
@@ -111,7 +110,7 @@ export function publish(quest: Quest, req: express.Request, res: express.Respons
 }
 
 export function unpublish(quest: Quest, req: express.Request, res: express.Response) {
-  if (!res.locals.id) {
+  if (!res.locals || !res.locals.id) {
     return res.status(500).end('You are not signed in. Please sign in (by refreshing the page) to save your quest.');
   }
 
@@ -126,7 +125,6 @@ export function unpublish(quest: Quest, req: express.Request, res: express.Respo
 }
 
 export function feedback(feedback: Feedback, req: express.Request, res: express.Response) {
-
   const type: FeedbackType = req.params.type;
   if (req.params.type !== 'rating' && req.params.type !== 'report') {
     return res.status(500).end('Unknown feedback type: ' + req.params.type);
@@ -199,13 +197,12 @@ export function subscribe(mailchimp: any, listId: string, req: express.Request, 
 }
 
 export function remotePlayUser(req: express.Request, res: express.Response) {
-  broker.fetchSessionsByClient(req.params.id).then((fetched: Session[]) => {
-    //const history = fetched.map((s) => { return sessions.getMetadata(s.id); }).filter((s) => {return s !== null;});
-    //TODO: reply({history});
-    res.status(200).send(JSON.stringify({history: [
-      {id: 5, peerCount: 3, questTitle: 'Test Quest', firstContact: new Date()},
-      {id: 6, peerCount: 1, questTitle: 'A Quest for Two', firstContact: new Date((new Date()).valueOf() - 65*60)},
-    ]}));
+  if (!res.locals || !res.locals.id) {
+    return res.status(500).end('You are not signed in.');
+  }
+
+  broker.fetchSessionsByClient(res.locals.id).then((fetched: SessionMetadata[]) => {
+    res.status(200).send(JSON.stringify({history: fetched}));
   })
   .catch((e: Error) => {
     return res.status(500).send(JSON.stringify({error: 'Error looking up user details: ' + e.toString()}));
@@ -213,6 +210,10 @@ export function remotePlayUser(req: express.Request, res: express.Response) {
 }
 
 export function remotePlayNewSession(req: express.Request, res: express.Response) {
+  if (!res.locals || !res.locals.id) {
+    return res.status(500).end('You are not signed in.');
+  }
+
   broker.createSession().then((s: Session) => {
     console.log('Created session');
     console.log(s);
@@ -224,6 +225,10 @@ export function remotePlayNewSession(req: express.Request, res: express.Response
 }
 
 export function remotePlayConnect(req: express.Request, res: express.Response) {
+  if (!res.locals || !res.locals.id) {
+    return res.status(500).end('You are not signed in.');
+  }
+
   let body: any;
   try {
     body = JSON.parse(req.body);
@@ -231,11 +236,11 @@ export function remotePlayConnect(req: express.Request, res: express.Response) {
     return res.status(500).end('Error reading request.');
   }
   let session: number;
-  const clientID = 'test' + Date.now();
-  broker.joinSession(clientID, body.secret)
+
+  broker.joinSession(res.locals.id, body.secret)
     .then((s: SessionID) => {
       session = s;
-      return broker.createAuthToken(clientID);
+      return broker.createAuthToken(res.locals.id);
     })
     .then((authToken: string) => {
       return res.status(200).send(JSON.stringify({session, authToken}));
