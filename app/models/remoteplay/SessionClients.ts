@@ -74,8 +74,8 @@ export class SessionClient {
       });
   }
 
-  public create(session: number, client: string, secret: string): Bluebird<SessionClientInstance> {
-    return this.model.create({session, client, secret});
+  public upsert(session: number, client: string, secret: string): Bluebird<boolean> {
+    return this.model.upsert({session, client, secret});
   }
 
   public getSessionsByClient(client: string): Bluebird<EventInstance[]> {

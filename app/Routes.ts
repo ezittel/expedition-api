@@ -62,7 +62,7 @@ export function setupWebsockets(server: any) {
     }
   });
 
-  server.on('connection', (ws: any, req: http.ServerRequest) => {
+  wss.on('connection', (ws: any, req: http.IncomingMessage) => {
     RemotePlayHandlers.websocketSession(models.Session, models.SessionClient, ws, req);
   });
 }

@@ -3,8 +3,7 @@ import * as Sequelize from 'sequelize'
 import {Session, SessionID, SessionMetadata} from 'expedition-qdl/lib/remote/Session'
 import {Session as SessionModel, SessionInstance} from '../models/remoteplay/Sessions'
 import {SessionClient, SessionClientInstance} from '../models/remoteplay/SessionClients'
-import {ClientID, RemotePlayEvent} from 'expedition-qdl/lib/remote/Events'
-import {InflightCommitAction, InflightRejectAction} from './Actions'
+import {ClientID, RemotePlayEvent, InflightCommitEvent, InflightRejectEvent} from 'expedition-qdl/lib/remote/Events'
 import * as url from 'url'
 import * as http from 'http'
 
@@ -71,12 +70,14 @@ export function connect(rpSessions: SessionModel, sessionClients: SessionClient,
     return res.status(500).end('Error reading request.');
   }
 
+  let session: SessionInstance;
   rpSessions.getBySecret(body.secret)
-    .then((session: SessionInstance) => {
-      return sessionClients.create(session.dataValues.id, res.locals.id, body.secret);
+    .then((s: SessionInstance) => {
+      session = s;
+      return sessionClients.upsert(session.dataValues.id, res.locals.id, body.secret);
     })
-    .then((sc: SessionClientInstance) => {
-      return res.status(200).send(JSON.stringify({session: sc.dataValues.session}));
+    .then(() => {
+      return res.status(200).send(JSON.stringify({session: session.dataValues.id}));
     })
     .catch((e: Error) => {
       return res.status(500).send(JSON.stringify({
@@ -91,7 +92,7 @@ export function remotePlayEvent() {
   // TODO
 }
 
-function wsParamsFromReq(req: http.ServerRequest) {
+function wsParamsFromReq(req: http.IncomingMessage) {
   if (!req || !req.url) {
     console.error('req.url not defined');
     console.log(req);
@@ -108,11 +109,12 @@ function wsParamsFromReq(req: http.ServerRequest) {
   return {
     session: parseInt(splitPath[1], 10),
     client: parsedURL.query.client,
-    secret: parsedURL.query.secret
+    secret: parsedURL.query.secret,
+    instance: parsedURL.query.instance,
   };
 }
 
-export function verifyWebsocket(sessionClients: SessionClient, info: {origin: string, secure: boolean, req: http.ServerRequest}, cb: (result: boolean) => any) {
+export function verifyWebsocket(sessionClients: SessionClient, info: {origin: string, secure: boolean, req: http.IncomingMessage}, cb: (result: boolean) => any) {
   const params = wsParamsFromReq(info.req);
   if (params === null) {
     return cb(false);
@@ -127,45 +129,58 @@ export function verifyWebsocket(sessionClients: SessionClient, info: {origin: st
     });
 }
 
-const inMemorySessions: {[sessionID: string]: {[clientID: string]: any}} = {};
+const inMemorySessions: {[sessionID: number]: {[clientAndInstance: string]: any}} = {};
 
-export function websocketSession(rpSession: SessionModel, sessionClients: SessionClient, ws: any, req: http.ServerRequest) {
-  console.log(req);
-  console.log(ws);
-  /*
+function broadcastFrom(session: number, client: string, instance: string, msg: string) {
+  for(const peerID of Object.keys(inMemorySessions[session])) {
+    if (peerID === client+'|'+instance) {
+      continue;
+    }
+
+    const peerWS = inMemorySessions[session][peerID];
+    if (peerWS) {
+      peerWS.send(msg);
+    }
+  }
+}
+
+export function websocketSession(rpSession: SessionModel, sessionClients: SessionClient, ws: any, req: http.IncomingMessage) {
   const params = wsParamsFromReq(req);
-
   console.log(`Client ${params.client} connected to session ${params.session} with secret ${params.secret}`);
 
   if (!inMemorySessions[params.session]) {
     inMemorySessions[params.session] = {};
   }
-  inMemorySessions[params.session][params.client] = ws;
+  inMemorySessions[params.session][params.client+'|'+params.instance] = ws;
 
-  // TODO: Broadcast new client to other clients
+  // TODO: Broadcast new client event to other clients
 
   ws.on('message', (msg: any) => {
     const event: RemotePlayEvent = JSON.parse(msg);
-    rpSession.commitEvent(event)
+    console.log('< ' + msg);
+
+    // If it's not a transactioned action, just broadcast it.
+    if (event.event.type !== 'ACTION') {
+      broadcastFrom(params.session, params.client, params.instance, msg);
+      return;
+    }
+
+    rpSession.commitEvent(params.session, event.id, event.event.type, msg)
       .then(() => {
         // Broadcast to all peers
-        for(const peerID of Object.keys(inMemorySessions[params.session])) {
-          const peerWS = inMemorySessions[params.session][peerID];
-          if (peerWS) {
-            peerWS.send(msg);
-          }
-        }
-        ws.send(JSON.stringify({
+        broadcastFrom(params.session, params.client, params.instance, msg);
+        ws.send(JSON.stringify({...event, event:{
           type: 'INFLIGHT_COMMIT',
           id: event.id,
-        } as InflightCommitAction));
+        }} as RemotePlayEvent));
       })
       .catch((error: Error) => {
-        ws.send(JSON.stringify({
+        console.log('Sending INFLIGHT_REJECT: ' + error.toString());
+        ws.send(JSON.stringify({...event, event: {
           type: 'INFLIGHT_REJECT',
           id: event.id,
           error: error.toString(),
-        } as InflightRejectAction));
+        }} as RemotePlayEvent));
       });
   });
 
@@ -173,5 +188,4 @@ export function websocketSession(rpSession: SessionModel, sessionClients: Sessio
     inMemorySessions[params.session][params.client] = null;
     // TODO: Broadcast lost client to other clients
   });
-  */
 }

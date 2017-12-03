@@ -94,45 +94,27 @@ export class Session {
     return Bluebird.reject(null);
   }
 
-  public commitEvent(event: RemotePlayEvent): Bluebird<void> {
-    return Bluebird.reject(null);
-    /*
-    return .transaction((txn: Sequelize.Transaction) => {
-      //return Session.
-      return;
-    })
-    .then(() => {
-
-    })
-    .catch((error: Error) => {
-      // TODO
-    });
-    */
-
-    // Each client owns a counter (/sessions/X/clients/<client_id>.eventCounter) that updates
-      // every time they write an event. In this transaction, all eventCounters are read
-      // before this client's counter is incremented and the event is written.
-      //
-      // If (according to the server) another client sends an event before this client sends theirs,
-      // this event is never written and we must rewind state to reflect the other client's actions.
-      /*
-      db.runTransaction((txn) => {
-        return Promise.all(this.sessionClientIDs.map((c: ClientID) => {
-          return txn.get(this.sessionRef.collection('clients').doc(c)).then((ref) => {
-            return [c, ref.data().eventCounter];
-          });
-        })).then((counters) => {
-          console.log(counters);
-          for (const c of counters) {
-            if (c[0] === this.id) {
-              return null; // txn.update(this.sessionRef.collection('clients').doc(c[0]), {eventCounter: c[1]+1});
-            }
+  public commitEvent(session: number, event: number, type: string, json: string): Bluebird<Sequelize.Transaction> {
+    return this.s.transaction((txn: Sequelize.Transaction) => {
+      return this.model.findOne({where: {id: session}, transaction: txn})
+        .then((s: SessionInstance) => {
+          if (!s) {
+            throw new Error('unknown session');
           }
-          throw new Error('Could not find self client ID in eventCounters');
-        }).then((result) => {
-          return null; //return txn.set(this.sessionRef.collection('events').doc(), event);
+          if ((s.dataValues.eventCounter + 1) !== event) {
+            throw new Error('eventCounter increment mismatch');
+          }
+          return s.update({eventCounter: event}, {transaction: txn});
+        })
+        .then(() => {
+          return this.event.model.upsert({
+            session,
+            id: event,
+            type,
+            json,
+          }, {transaction: txn});
         });
-        */
+    });
   }
 }
 

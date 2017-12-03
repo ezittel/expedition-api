@@ -2,12 +2,10 @@ import * as Sequelize from 'sequelize'
 import * as Bluebird from 'bluebird'
 
 export interface EventAttributes {
-  session: string;
+  session: number;
   id: number;
-  email: string;
-  name: string;
-  created: Date;
-  lastLogin: Date;
+  type: string;
+  json: string;
 }
 
 export interface EventInstance extends Sequelize.Instance<EventAttributes> {
@@ -24,12 +22,12 @@ export class Event {
     this.s = s;
     this.model = (this.s.define('Events', {
       session: {
-        type: Sequelize.STRING(128),
+        type: Sequelize.BIGINT,
         allowNull: false,
         primaryKey: true,
       },
       id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.BIGINT,
         allowNull: false,
         primaryKey: true,
       },
@@ -39,9 +37,6 @@ export class Event {
       },
       json: {
         type: Sequelize.TEXT(),
-        validate: {
-          isEmail: true,
-        }
       },
     }, {
       timestamps: true,
