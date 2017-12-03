@@ -46,21 +46,6 @@ export class Event {
 
   public associate(models: any) {}
 
-  /*
-  public get(session: string, id: string): Bluebird<EventInstance> {
-    return this.s.authenticate()
-      .then(() => {
-        return null; //this.model.findOne({where: {session, id}});
-      })
-      .then((result: EventInstance) => {
-        if (!result) {
-          throw new Error('Event not found');
-        }
-        return result;
-      });
-  }
-  */
-
   public upsert(attrs: EventAttributes): Bluebird<boolean> {
     return this.model.upsert(attrs);
   }

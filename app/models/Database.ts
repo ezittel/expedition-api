@@ -45,10 +45,8 @@ class Database {
     };
 
     // Associate models with each other
-    // and ensure all tables fully synced
     for (const k of Object.keys(this.models)) {
       (this.models as any)[k].associate(this.models);
-      (this.models as any)[k].model.sync();
     }
 
   }

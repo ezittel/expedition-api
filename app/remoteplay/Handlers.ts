@@ -7,36 +7,13 @@ import {ClientID, RemotePlayEvent, InflightCommitEvent, InflightRejectEvent} fro
 import * as url from 'url'
 import * as http from 'http'
 
-const Joi = require('joi');
-
-const GENERIC_ERROR_MESSAGE = 'Something went wrong. Please contact support by emailing Expedition@Fabricate.io';
-
 export function user(sc: SessionClient, req: express.Request, res: express.Response) {
   if (!res.locals || !res.locals.id) {
     return res.status(500).end('You are not signed in.');
   }
 
   sc.getSessionsByClient(res.locals.id).then((fetched: any[]) => {
-    // TODO Map the data
-    /*
-      return db.collection('sessions').doc(result.id.toString()).collection('events')
-        .orderBy('added', 'desc').limit(1).get()
-        .then((events) => {
-          if (!events || events.docs.length < 1) {
-            return null;
-          }
-          result.lastAction = events.docs[0].data().added;
-          return db.collection('sessions').doc(result.id.toString()).collection('clients').get();
-        })
-        .then((clients) => {
-          if (!clients) {
-            return null;
-          }
-          result.peerCount = clients.docs.length;
-          return result;
-        });
-    */
-    console.log('Sessions fetched');
+    // TODO map data to most recent event, plus number of other players connected
     res.status(200).send(JSON.stringify({history: fetched}));
   })
   .catch((e: Error) => {
@@ -50,7 +27,6 @@ export function newSession(rpSessions: SessionModel, req: express.Request, res: 
   }
 
   rpSessions.create().then((s: SessionInstance) => {
-    console.log('Created session', s.dataValues.id);
     res.status(200).send(JSON.stringify({secret: s.dataValues.secret}));
   })
   .catch((e: Error) => {
@@ -84,12 +60,6 @@ export function connect(rpSessions: SessionModel, sessionClients: SessionClient,
         error: 'Could not join session: ' + e.toString()
       }));
     });
-}
-
-export function remotePlayEvent() {
-  // Attempt to add a client event to the session.
-  // This is done transactionally.
-  // TODO
 }
 
 function wsParamsFromReq(req: http.IncomingMessage) {
@@ -157,7 +127,6 @@ export function websocketSession(rpSession: SessionModel, sessionClients: Sessio
 
   ws.on('message', (msg: any) => {
     const event: RemotePlayEvent = JSON.parse(msg);
-    console.log('< ' + msg);
 
     // If it's not a transactioned action, just broadcast it.
     if (event.event.type !== 'ACTION') {
@@ -175,7 +144,6 @@ export function websocketSession(rpSession: SessionModel, sessionClients: Sessio
         }} as RemotePlayEvent));
       })
       .catch((error: Error) => {
-        console.log('Sending INFLIGHT_REJECT: ' + error.toString());
         ws.send(JSON.stringify({...event, event: {
           type: 'INFLIGHT_REJECT',
           id: event.id,

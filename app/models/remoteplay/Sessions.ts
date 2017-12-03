@@ -45,7 +45,7 @@ export class Session {
         allowNull: false,
       }
     }, {
-      timestamps: false, // TODO: eventually switch to sequelize timestamps
+      timestamps: true,
       underscored: true,
     }) as SessionModel);
   }
