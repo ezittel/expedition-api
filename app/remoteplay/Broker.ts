@@ -1,4 +1,4 @@
-import {SessionID, BrokerBase, Session, SessionSecret, SessionMetadata} from 'expedition-qdl/lib/remote/Broker'
+// import {SessionID, BrokerBase, Session, SessionSecret, SessionMetadata} from 'expedition-qdl/lib/remote/Broker'
 import {ClientID, RemotePlayEvent} from 'expedition-qdl/lib/remote/Events'
 
 import config from '../config'
@@ -6,6 +6,7 @@ import * as Bluebird from 'bluebird';
 
 import * as firebaseAdmin from 'firebase-admin';
 
+/*
 firebaseAdmin.initializeApp({
   credential: firebaseAdmin.credential.cert(config.get('FIREBASE_SERVICE_KEY'))
 });
@@ -91,10 +92,10 @@ export class Broker extends BrokerBase {
 
   addClient(c: ClientID, s: Session): Promise<boolean> {
     const sid = s.id.toString();
-    const cid = c.toString();
-    return db.collection('sessions').doc(sid).collection('clients').doc(cid).set({
+    return db.collection('sessions').doc(sid).collection('clients').doc(c).set({
       id: c,
       added: Date.now(),
+      eventCounter: 0, // Used for transactional events
     })
     .then(() => {
       // Also update list of clients' sessions for searchability
@@ -108,10 +109,9 @@ export class Broker extends BrokerBase {
     });
   };
 
-  createAuthToken(c: ClientID): Promise<string> {
-    return firebaseAdmin.auth().createCustomToken(c);
-  }
+
 }
 
 const broker = new Broker();
 export default broker;
+*/
