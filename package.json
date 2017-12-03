@@ -6,10 +6,10 @@
   "repository": "https://github.com/ExpeditionRPG/expedition-api",
   "main": "react.js",
   "scripts": {
-    "test": "mocha meta_tests.js && ts-mocha app/**/*.test.ts",
+    "test": "mocha meta_tests.js && NODE_ENV='dev' ts-mocha app/**/*.test.ts",
     "build": "webpack --config webpack.dist.config.js --progress",
     "start": "node dist/server.js",
-    "heroku-postbuild": "webpack -p --config webpack.dist.config.js --progress"
+    "heroku-postbuild": "NODE_ENV='production' webpack --config webpack.dist.config.js --progress"
   },
   "author": "Fabricate.IO",
   "license": "CC-BY-NC-SA-4.0",
@@ -41,8 +41,6 @@
     "express-rate-limit": "^2.9.0",
     "express-session": "^1.15.4",
     "express-winston": "^2.4.0",
-    "express-ws": "^3.0.0",
-    "firebase-admin": "^5.4.2",
     "forwarded": "^0.1.0",
     "google-auth-library": "^0.10.0",
     "google-cloud": "^0.56.0",
@@ -64,6 +62,7 @@
     "proxy-middleware": "^0.15.0",
     "sequelize": "^4.7.2",
     "sinon": "^3.2.1",
+    "snyk": "^1.47.0",
     "sqlite3": "^3.1.9",
     "squel": "^5.11.1",
     "through2": "^2.0.3",
@@ -95,6 +94,7 @@
     "mocha": "^3.5.3",
     "mocha-loader": "^1.1.1",
     "mocha-webpack": "^0.7.0",
+    "node-uuid": "^1.4.8",
     "nodejs-repo-tools": "git+https://github.com/GoogleCloudPlatform/nodejs-repo-tools.git#21daa823090c43fb667157c8b5b0c3b7f45a8357",
     "npm-check-updates": "^2.10.3",
     "proxyquire": "^1.7.11",
@@ -111,5 +111,6 @@
   },
   "engines": {
     "node": "8.1.4"
-  }
+  },
+  "snyk": true
 }

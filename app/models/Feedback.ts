@@ -121,10 +121,6 @@ export class Feedback {
       .then((q: QuestInstance) => {
         quest = q;
 
-        if (!this.mail) {
-          return Promise.resolve();
-        }
-
         const ratingavg = (quest.dataValues.ratingavg || 0).toFixed(1);
         if (type === 'rating' && quest.dataValues.ratingcount === 1) {
           const subject = `Your quest just received its first rating!`;
@@ -135,8 +131,9 @@ export class Feedback {
           if (feedback.text.length > 0) {
             message += `<p>User feedback:</p><p>"${feedback.text}"</p>`;
           }
+          message += `<p>Link to edit quest: <a href="https://quests.expeditiongame.com/#${feedback.questid}>https://quests.expeditiongame.com/#${feedback.questid}</a></p>`;
           return Mail.send([quest.dataValues.email, 'expedition+questfeedback@fabricate.io'], subject, message);
-        } else if (type === 'rating' && (feedback.text.length > 0 || feedback.rating < 3)) {
+        } else if (type === 'rating' && feedback.text.length > 0) {
           const subject = `Quest rated ${feedback.rating}/5: ${quest.dataValues.title}`;
           const message = `<p>User feedback:</p>
             <p>"${feedback.text}"</p>
@@ -145,7 +142,7 @@ export class Feedback {
             <p>Was submitted for ${quest.dataValues.title} by ${quest.dataValues.author}</p>
             <p>They played with ${feedback.players} adventurers on ${feedback.difficulty} difficulty on ${feedback.platform} v${feedback.version}.</p>
             <p>Reviewer email: <a href="mailto:${feedback.email}">${feedback.email}</a></p>
-            <p>Quest id: ${feedback.questid}</p>
+            <p>Link to edit quest: <a href="https://quests.expeditiongame.com/#${feedback.questid}"">https://quests.expeditiongame.com/#${feedback.questid}</a></p>
           `;
           return Mail.send([quest.dataValues.email, 'expedition+questfeedback@fabricate.io'], subject, message);
         } else if (type === 'report') {
@@ -157,7 +154,7 @@ export class Feedback {
             <p>Was submitted for ${quest.dataValues.title} by ${quest.dataValues.author}</p>
             <p>They played with ${feedback.players} adventurers on ${feedback.difficulty} difficulty on ${feedback.platform} v${feedback.version}.</p>
             <p>User email that reported it: <a href="mailto:${feedback.email}">${feedback.email}</a></p>
-            <p>Quest id: ${feedback.questid}</p>
+            <p>Link to edit quest: <a href="https://quests.expeditiongame.com/#${feedback.questid}>https://quests.expeditiongame.com/#${feedback.questid}</a></p>
           `;
           return Mail.send([quest.dataValues.email, 'expedition+questreported@fabricate.io'], subject, message);
         }
