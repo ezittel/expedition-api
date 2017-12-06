@@ -133,7 +133,7 @@ function handleClientStatus(rpSession: SessionModel, session: number, client: Cl
   }
 
   if (waitCounts['TIMER'] === Object.keys(s).length) {
-    const msg = JSON.stringify({
+    const combatStopEvent = {
       client: 'SERVER',
       instance: 'PROD',
       event: {
@@ -142,12 +142,13 @@ function handleClientStatus(rpSession: SessionModel, session: number, client: Cl
         args: JSON.stringify({elapsedMillis: maxElapsedMillis, seed: Date.now()}),
       } as ActionEvent,
       id: null,
-    } as RemotePlayEvent);
+    } as RemotePlayEvent;
 
-    rpSession.commitEvent(session, client, null, 'ACTION', msg)
+    rpSession.commitEvent(session, client, null, 'ACTION', JSON.stringify(combatStopEvent))
       .then((eventCount: number) => {
         // Broadcast to all peers
-        broadcastFrom(session, '', '', msg);
+        combatStopEvent.id = eventCount;
+        broadcastFrom(session, '', '', JSON.stringify(combatStopEvent));
       })
       .catch((error: Error) => {
         broadcastFrom(session, '', '', JSON.stringify({
