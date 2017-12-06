@@ -1,3 +1,4 @@
+import Config from '../config'
 import * as express from 'express'
 import * as Sequelize from 'sequelize'
 import {Session, SessionID, SessionMetadata} from 'expedition-qdl/lib/remote/Session'
@@ -135,7 +136,7 @@ function handleClientStatus(rpSession: SessionModel, session: number, client: Cl
   if (waitCounts['TIMER'] === Object.keys(s).length) {
     const combatStopEvent = {
       client: 'SERVER',
-      instance: 'PROD',
+      instance: Config.get('NODE_ENV'),
       event: {
         type: 'ACTION',
         name: 'handleCombatTimerStop',
@@ -153,7 +154,7 @@ function handleClientStatus(rpSession: SessionModel, session: number, client: Cl
       .catch((error: Error) => {
         broadcastFrom(session, '', '', JSON.stringify({
           client: 'SERVER',
-          instance: 'PROD',
+          instance: Config.get('NODE_ENV'),
           event: {
             type: 'ERROR',
             error: error.toString(),
