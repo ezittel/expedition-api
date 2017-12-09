@@ -124,6 +124,9 @@ function handleClientStatus(rpSession: SessionModel, session: number, client: Cl
   const waitCounts: {[wait: string]: number} = {};
   let maxElapsedMillis = 0;
   for (const c of Object.keys(s)) {
+    if (!s[c] || !s[c].status) {
+      continue;
+    }
     const wo: WaitType = s[c].status.waitingOn;
     if (wo) {
       waitCounts[wo.type] = (waitCounts[wo.type] || 0) + 1;
