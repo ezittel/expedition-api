@@ -108,7 +108,7 @@ function broadcastFrom(session: number, client: string, instance: string, msg: s
       continue;
     }
 
-    const peerWS = inMemorySessions[session][peerID].socket;
+    const peerWS = inMemorySessions[session][peerID] && inMemorySessions[session][peerID].socket;
     if (peerWS && peerWS.readyState === 1 /* OPEN */) {
       peerWS.send(msg);
     }
