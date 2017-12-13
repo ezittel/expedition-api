@@ -185,6 +185,11 @@ export function websocketSession(rpSession: SessionModel, sessionClients: Sessio
   // TODO: Replay latest client statuses to the new socket
 
   ws.on('message', (msg: any) => {
+    // Ignore pings
+    if (msg === 'PING') {
+      return;
+    }
+
     const event: RemotePlayEvent = JSON.parse(msg);
 
     // If it's not a transactioned action, just broadcast it.
