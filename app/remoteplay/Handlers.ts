@@ -90,7 +90,6 @@ export function verifyWebsocket(sessionClients: SessionClient, info: {origin: st
   if (params === null) {
     return cb(false);
   }
-  console.log('Verifying client with params ' + JSON.stringify(params));
   sessionClients.verify(params.session, params.client, params.secret)
     .then((verified: boolean) => {
       return cb(verified);
