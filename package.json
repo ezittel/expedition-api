@@ -62,9 +62,9 @@
     "proxy-middleware": "^0.15.0",
     "sequelize": "^4.7.2",
     "sinon": "^3.2.1",
-    "snyk": "^1.47.0",
     "sqlite3": "^3.1.9",
     "squel": "^5.11.1",
+    "stripe": "^5.4.0",
     "through2": "^2.0.3",
     "ts-mocha": "^1.0.3",
     "typescript-formatter": "^5.1.1",
@@ -111,6 +111,5 @@
   },
   "engines": {
     "node": "8.1.4"
-  },
-  "snyk": true
+  }
 }
