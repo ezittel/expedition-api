@@ -99,7 +99,7 @@ export class User {
       .then(() => {
         return this.ae.model.findAll({
           attributes: ['quest_id', [Sequelize.fn('MAX', Sequelize.col('created')), 'last_played']],
-          where: {user_id: user.id, category: 'quest', action: 'end'} as any,
+          where: {user_id: user.id, category: 'quest', action: 'end'},
           group: 'quest_id',
         })
       })
