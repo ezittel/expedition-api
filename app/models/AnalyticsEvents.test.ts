@@ -1,4 +1,5 @@
-import {AnalyticsEvent, AnalyticsEventAttributes} from './AnalyticsEvents'
+import {AnalyticsEvent, AnalyticsEventInstance} from './AnalyticsEvents'
+import {AnalyticsEvent as AnalyticsEventAttributes} from 'expedition-qdl/lib/schema/AnalyticsEvents'
 import {Quest} from './Quests'
 
 const Sequelize = require('sequelize');
@@ -7,18 +8,19 @@ describe('AnalyticsEvent', () => {
   let ae: AnalyticsEvent;
   let q: Quest;
 
-  const testData: AnalyticsEventAttributes = {
+  const testData = new AnalyticsEventAttributes({
     category: 'category',
     action: 'action',
     created: new Date(),
-    quest_id: 'questid',
-    user_id: 'userid',
-    quest_version: 1,
-    difficulty: 'normal',
+    questID: 'questid',
+    userID: 'userid',
+    questVersion: 1,
+    difficulty: 'NORMAL',
     platform: 'ios',
     players: 5,
     version: '1.0.0',
-  };
+    json: '"test"',
+  });
 
   describe('submitAnalyticsEvent', () => {
     beforeEach((done: DoneFn) => {
@@ -44,10 +46,12 @@ describe('AnalyticsEvent', () => {
         .catch((e: Error) => {throw e;});
     });
 
-    // TODO once we have / need event getting, get and confirm entry here
     it('created an entry', (done: DoneFn) => {
       ae.create(testData)
         .then(() => {
+          return ae.model.findOne({where: {userID: testData.userID}});
+        }).then((m: AnalyticsEventInstance) => {
+          expect(new AnalyticsEventAttributes(m.dataValues)).toEqual(testData);
           done();
         });
     });
