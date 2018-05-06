@@ -39,11 +39,10 @@ describe('AnalyticsEvent', () => {
         .then(() => {
           ae = new AnalyticsEvent(s);
           ae.associate({Quest: q});
-          ae.model.sync()
-            .then(() => {done();})
-            .catch((e: Error) => {throw e;});
+          return ae.model.sync();
         })
-        .catch((e: Error) => {throw e;});
+        .then(() => done())
+        .catch(done.fail);
     });
 
     it('created an entry', (done: DoneFn) => {
@@ -53,7 +52,8 @@ describe('AnalyticsEvent', () => {
         }).then((m: AnalyticsEventInstance) => {
           expect(new AnalyticsEventAttributes(m.dataValues)).toEqual(testData);
           done();
-        });
+        })
+        .catch(done.fail);
     });
   });
 });

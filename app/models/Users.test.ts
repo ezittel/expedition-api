@@ -8,20 +8,20 @@ describe('users', () => {
   let ae: AnalyticsEvent;
   let u: User;
   let mc: any;
-  beforeEach((done: () => any) => {
+  beforeEach((done: DoneFn) => {
     const s = new Sequelize({dialect: 'sqlite', storage: ':memory:'})
     mc = {post: sinon.spy()};
     ae = new AnalyticsEvent(s);
     ae.model.sync()
       .then(() => {
         u = new User(s, mc);
-        u.model.sync()
-          .then(() => {
-            u.associate({AnalyticsEvent: ae});
-          })
-          .then(() => {done();})
-          .catch((e: Error) => {throw e;});
-      });
+        return u.model.sync();
+      })
+      .then(() => {
+        return u.associate({AnalyticsEvent: ae});
+      })
+      .then(() => done())
+      .catch(done.fail);
   });
 
   const testUserData: UserAttributes = {
