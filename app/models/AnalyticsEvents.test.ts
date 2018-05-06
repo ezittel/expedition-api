@@ -4,6 +4,19 @@ import {Quest} from './Quests'
 
 const Sequelize = require('sequelize');
 
+export const testQuestEnd: AnalyticsEventAttributes = new AnalyticsEventAttributes({
+  category: 'quest',
+  action: 'end',
+  created: new Date(),
+  questID: 'questid',
+  userID: 'userid',
+  questVersion: 1,
+  difficulty: 'NORMAL',
+  platform: 'ios',
+  players: 5,
+  version: '1.0.0',
+});
+
 describe('AnalyticsEvent', () => {
   let ae: AnalyticsEvent;
   let q: Quest;

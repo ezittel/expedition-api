@@ -13,8 +13,13 @@ export interface UserAttributes {
   created?: Date|null;
   login_count?: number|null;
   last_login?: Date|null;
-  quest_plays: {[id: string]: Date}; // TODO: this is not a value in the User table and shouldn't be an attribute.
 }
+
+export interface UserQuestsType {
+  [questId: string]: {
+    lastPlayed: Date;
+  };
+};
 
 export interface UserInstance extends Sequelize.Instance<UserAttributes> {
   dataValues: UserAttributes;
@@ -66,9 +71,7 @@ export class User {
   public setLootPoints(id: string, lootPoints: number) {
     return this.s.authenticate()
       .then(() => {return this.model.findOne({where: {id}})})
-      .then((result: UserInstance) => {
-        return result.update({loot_points: lootPoints});
-      });
+      .then((result: UserInstance) => result.update({loot_points: lootPoints}));
   }
 
   public upsert(user: UserAttributes): Bluebird<UserAttributes> {
@@ -94,28 +97,36 @@ export class User {
       .then(() => {return this.model.findOne({where: {id: user.id}})})
       .then((result: UserInstance) => {
         result.increment('login_count');
-        user = result.dataValues;
-      })
-      .then(() => {
-        return this.ae.model.findAll({
-          attributes: ['questID', [Sequelize.fn('MAX', Sequelize.col('created')), 'lastPlayed']],
-          where: {userID: user.id, category: 'quest', action: 'end'},
-          group: 'questID',
-        })
-      })
-      .then((results: any[]) => {
-        user.quest_plays = {} as {[id: string]: Date};
-        (results || []).forEach((result: any) => {
-          user.quest_plays[result.dataValues['questID']] = result.dataValues['lastPlayed'];
-        });
-        return user;
+        return result.dataValues;
       });
   }
 
   public get(id: string): Bluebird<UserAttributes> {
     return this.s.authenticate()
-      .then(() => {return this.model.findOne({where: {id}})})
-      .then((result: UserInstance) => {return result.dataValues});
+      .then(() => this.model.findOne({where: {id}}))
+      .then((result: UserInstance) => result.dataValues);
+  }
+
+  public getQuests(id: string): Bluebird<UserQuestsType> {
+    return this.s.authenticate()
+      .then(() => {
+        return this.ae.model.findAll({
+          attributes: ['questID', [Sequelize.fn('MAX', Sequelize.col('created')), 'lastPlayed']],
+          where: {userID: id, category: 'quest', action: 'end'},
+          group: 'questID',
+        })
+      })
+      .then((results: any[]) => {
+        const userQuests = {} as UserQuestsType;
+        (results || []).forEach((result: any) => {
+          const id = result.dataValues['questID'];
+          userQuests[id] = {
+            ...userQuests[id],
+            lastPlayed: result.dataValues['lastPlayed']
+          };
+        });
+        return userQuests;
+      });
   }
 }
 

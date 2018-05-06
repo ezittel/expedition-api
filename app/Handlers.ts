@@ -11,6 +11,7 @@ import {Feedback as FeedbackAttributes} from 'expedition-qdl/lib/schema/Feedback
 import {AnalyticsEvent as AnalyticsEventAttributes} from 'expedition-qdl/lib/schema/AnalyticsEvents'
 import {PUBLIC_PARTITION} from 'expedition-qdl/lib/schema/Constants'
 import {RenderedQuest, RenderedQuestInstance} from './models/RenderedQuests'
+import {User, UserQuestsType} from './models/Users'
 import * as Joi from 'joi'
 import Config from './config'
 
@@ -282,6 +283,17 @@ export function feedback(mail: any, feedback: Feedback, req: express.Request, re
     res.status(500).end(GENERIC_ERROR_MESSAGE);
     throw e;
   });
+}
+
+export function userQuests(user: User, req: express.Request, res: express.Response) {
+  user.getQuests(res.locals.id)
+    .then((userQuests: UserQuestsType) => {
+      return res.send(JSON.stringify(userQuests));
+    })
+    .catch((e: Error) => {
+      console.error(e);
+      return res.status(500).send(GENERIC_ERROR_MESSAGE);
+    });
 }
 
 export function subscribe(mailchimp: any, listId: string, req: express.Request, res: express.Response) {
