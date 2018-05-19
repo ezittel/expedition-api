@@ -51,6 +51,7 @@
     "bluebird": "^3.5.1",
     "body-parser": "^1.17.2",
     "cheerio": "^1.0.0-rc.2",
+    "connect-session-sequelize": "^5.2.1",
     "cors": "^2.8.4",
     "expedition-qdl": "git+https://github.com/ExpeditionRPG/expedition-qdl.git#4abcebaaabd2246580585583f4c50460c643a5db",
     "express": "^4.15.3",
