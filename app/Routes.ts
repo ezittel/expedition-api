@@ -27,7 +27,6 @@ export function installRoutes(db: Database, router: express.Router) {
     message: 'Publishing too frequently. Please wait 1 minute and then try again',
   });
 
-  // TODO: Rate-limit session creation
   const sessionLimiter = new RateLimit({
     windowMs: 60*1000, // 1 minute window
     delayAfter: 4,     // begin slowing down responses after the fourth request
