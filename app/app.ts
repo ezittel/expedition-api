@@ -52,6 +52,7 @@ function setupRoutes(db: Database, app: any) {
   const routes = express.Router();
   installRoutes(db, routes);
 
+  app.use(routes);
   app.use('/images', express.static('app/assets/images'));
   app.use(express.static('dist'));
 };
